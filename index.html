@@ -23,6 +23,7 @@
             --app-green: #1DB954;
             --app-green-hover: #1ed760;
             --app-text-sub: #b3b3b3;
+            color-scheme: dark; /* Forces native inputs (like calendar) to be dark */
         }
 
         body {
@@ -84,6 +85,11 @@
         }
         .app-input::placeholder {
             color: #b3b3b3;
+        }
+        
+        /* Specific fix for calendar icon in chrome/edge */
+        ::-webkit-calendar-picker-indicator {
+            filter: invert(1);
         }
 
         /* Primary Button */
@@ -185,6 +191,12 @@
                                 <i class="fa-solid fa-rotate"></i>
                             </button>
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-[#b3b3b3] uppercase tracking-wider mb-2">Date & Time</label>
+                        <input type="datetime-local" id="doc-date" class="app-input w-full rounded-md p-3 text-sm">
+                        <p class="text-[10px] text-[#b3b3b3] mt-1 pl-1">Leave empty to use current time.</p>
                     </div>
 
                     <div>
@@ -411,7 +423,7 @@
             }
         }
 
-        // --- Stamp Logic ---
+        // --- Stamp Logic (UPDATED with DATE PICKER) ---
 
         async function generateCompositeStamp() {
             const canvasWidth = 600;
@@ -420,9 +432,17 @@
             const docNum = document.getElementById('doc-number').value;
             const mode = document.getElementById('qr-mode').value;
             let qrText = document.getElementById('qr-content').value;
+            
+            // Get Date from Input or Use Current
+            const dateInput = document.getElementById('doc-date').value;
+            let dateObj;
+            if (dateInput) {
+                dateObj = new Date(dateInput);
+            } else {
+                dateObj = new Date();
+            }
 
-            const now = new Date();
-            const dateStr = now.toLocaleString('en-US', { 
+            const dateStr = dateObj.toLocaleString('en-US', { 
                 month: 'short', 
                 day: 'numeric', 
                 year: 'numeric',
@@ -702,4 +722,3 @@
     </script>
 </body>
 </html>
-
