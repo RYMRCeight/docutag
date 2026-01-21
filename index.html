@@ -1,726 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DocuTag by Reymarc Jason</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
-    
-    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
-    <script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        /* Theme Variables - Kept Spotify Colors */
-        :root {
-            --app-black: #121212;
-            --app-dark-gray: #181818;
-            --app-light-gray: #282828;
-            --app-green: #1DB954;
-            --app-green-hover: #1ed760;
-            --app-text-sub: #b3b3b3;
-            color-scheme: dark; /* Forces native inputs (like calendar) to be dark */
-        }
+<meta charset="UTF-8">
+<title>DocuTag – DOCX Issuance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--app-black);
-            color: white;
-        }
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
+<script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+<script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #121212; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #555; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #888; 
-        }
-
-        /* Loader */
-        .loader {
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 3px solid black; 
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Card Style */
-        .app-card {
-            background-color: var(--app-dark-gray);
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-        }
-        .app-card:hover {
-            background-color: #282828;
-        }
-
-        /* Inputs */
-        .app-input {
-            background-color: #3e3e3e;
-            border: 1px solid transparent;
-            color: white;
-            transition: all 0.2s;
-        }
-        .app-input:focus {
-            background-color: #333;
-            border-color: #777;
-            outline: 2px solid white;
-        }
-        .app-input::placeholder {
-            color: #b3b3b3;
-        }
-        
-        /* Specific fix for calendar icon in chrome/edge */
-        ::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
-
-        /* Primary Button */
-        .btn-primary {
-            background-color: var(--app-green);
-            color: black;
-            font-weight: 700;
-            border-radius: 500px; /* Pill shape */
-            transition: transform 0.1s, background-color 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.875rem;
-        }
-        .btn-primary:hover {
-            background-color: var(--app-green-hover);
-            transform: scale(1.02);
-        }
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-
-        /* Range Slider Styling */
-        input[type=range] {
-            accent-color: var(--app-green);
-        }
-
-        /* Word Preview Container */
-        #docx-preview-container {
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background: #222;
-            padding: 20px;
-            border-radius: 0 0 8px 8px;
-        }
-        .docx-wrapper {
-            background: white;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            margin: 0 auto;
-            max-width: 100% !important; 
-        }
-        
-        #preview-wrapper {
-            background: #222; 
-        }
-
-        /* Canvas (Hidden but functional) */
-        #composite-canvas {
-            position: absolute;
-            left: -9999px;
-            top: -9999px;
-            visibility: visible; 
-        }
-    </style>
+<style>
+body{background:#121212;color:white;font-family:Inter,system-ui}
+.app-card{background:#181818;border-radius:12px}
+.app-input{background:#2a2a2a;color:white}
+.btn{background:#22c55e;color:black;font-weight:700;border-radius:999px}
+#composite-canvas{position:absolute;left:-9999px}
+</style>
 </head>
+
 <body class="min-h-screen flex flex-col">
 
-    <header class="bg-black/50 backdrop-blur-md sticky top-0 z-50 border-b border-[#282828]">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="bg-transparent rounded-full p-1">
-                    <i class="fa-solid fa-file-shield text-[#1DB954] text-3xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold text-white tracking-tight">DocuTag <span class="text-neutral-400 font-normal">by Reymarc Jason</span></h1>
-                </div>
-            </div>
-            
-            </div>
-    </header>
-
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col lg:flex-row gap-8">
-        
-        <div class="w-full lg:w-1/3 space-y-6">
-            
-            <div class="app-card p-6">
-                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    1. Upload Document
-                </h2>
-                <div class="relative border-2 border-dashed border-[#3e3e3e] bg-[#222] rounded-lg p-8 text-center hover:border-[#1DB954] hover:bg-[#2a2a2a] transition-all group" id="drop-zone">
-                    <input type="file" id="file-upload" accept=".pdf,.docx" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <div class="space-y-3">
-                        <i class="fa-solid fa-cloud-arrow-up text-[#b3b3b3] text-4xl group-hover:text-white transition-colors"></i>
-                        <p class="text-sm text-white font-bold" id="file-name">Choose PDF or DOCX</p>
-                        <p class="text-xs text-[#b3b3b3]">Supports .pdf and .docx</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="app-card p-6">
-                <h2 class="text-lg font-bold text-white mb-4">2. Configuration</h2>
-                
-                <div class="space-y-5">
-                    <div>
-                        <label class="block text-xs font-bold text-[#b3b3b3] uppercase tracking-wider mb-2">Ref Number</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="doc-number" class="app-input w-full rounded-md p-3 text-sm font-mono" placeholder="DOC-202X...">
-                            <button onclick="generateUniqueDocNum()" class="px-4 py-2 bg-[#282828] text-[#1DB954] rounded-md hover:bg-[#333] hover:text-white transition-colors" title="Generate ID">
-                                <i class="fa-solid fa-rotate"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-[#b3b3b3] uppercase tracking-wider mb-2">Date & Time</label>
-                        <input type="datetime-local" id="doc-date" class="app-input w-full rounded-md p-3 text-sm">
-                        <p class="text-[10px] text-[#b3b3b3] mt-1 pl-1">Leave empty to use current time.</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-[#b3b3b3] uppercase tracking-wider mb-2">QR Mode</label>
-                        <select id="qr-mode" class="app-input w-full rounded-md p-3 text-sm">
-                            <option value="text" selected>Plain Text (Offline)</option>
-                            <option value="web">Digital Cert (Web View)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-[#b3b3b3] uppercase tracking-wider mb-2">Custom Text</label>
-                        <input type="text" id="qr-content" class="app-input w-full rounded-md p-3 text-sm" placeholder="Auto: 'Authentic & Verified...'" >
-                    </div>
-
-                    <div id="position-controls" class="border-t border-[#282828] pt-4 mt-4 hidden">
-                        <label class="block text-xs font-bold text-[#b3b3b3] uppercase tracking-wider mb-3">Placement</label>
-                        
-                        <div class="flex items-center mb-4">
-                            <input type="checkbox" id="center-align" checked class="h-4 w-4 bg-[#121212] border-gray-600 rounded text-[#1DB954] focus:ring-0 focus:ring-offset-0">
-                            <label for="center-align" class="ml-3 block text-sm text-white">
-                                Center Align
-                            </label>
-                        </div>
-
-                        <div id="pdf-coords" class="grid grid-cols-2 gap-4">
-                            <div class="opacity-50 transition-opacity" id="pos-x-container">
-                                <label class="text-[10px] text-[#b3b3b3] mb-1 block">Left (X)</label>
-                                <input type="range" id="pos-x" min="10" max="500" value="50" disabled class="w-full h-1 bg-[#444] rounded-lg appearance-none cursor-pointer">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-[#b3b3b3] mb-1 block">Bottom (Y)</label>
-                                <input type="range" id="pos-y" min="10" max="300" value="30" class="w-full h-1 bg-[#444] rounded-lg appearance-none cursor-pointer">
-                            </div>
-                        </div>
-                        <p id="word-note" class="hidden text-xs text-[#1DB954] mt-2 font-medium">
-                            <i class="fa-solid fa-bolt mr-1"></i> Smart Fit: Floats at bottom without creating new page.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="processPDF()" id="process-pdf-btn" class="hidden w-full btn-primary py-3 px-4 shadow-lg shadow-green-900/20 flex items-center justify-center gap-2">
-                <span>STAMP PDF</span>
-            </button>
-
-            <button onclick="processWordDocument()" id="process-word-btn" class="hidden w-full btn-primary py-3 px-4 shadow-lg shadow-green-900/20 flex items-center justify-center gap-2">
-                <i class="fa-solid fa-file-word"></i>
-                <span>STAMP WORD</span>
-            </button>
-
-            <div id="download-section" class="hidden animate-fade-in bg-gradient-to-r from-green-900/40 to-black border border-green-900/50 rounded-lg p-4">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-[#1DB954] p-2 rounded-full text-black h-8 w-8 flex items-center justify-center">
-                        <i class="fa-solid fa-check"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-white">Complete</h3>
-                        <p class="text-xs text-[#b3b3b3]" id="success-msg">Your document is ready.</p>
-                    </div>
-                </div>
-                
-                <button id="dl-pdf-btn" onclick="downloadPDF()" class="hidden w-full bg-white text-black py-2 px-4 rounded-full hover:scale-105 transition-transform text-sm font-bold mb-2 uppercase tracking-wide">
-                    Download PDF
-                </button>
-
-                <button id="dl-word-btn" onclick="downloadWord()" class="hidden w-full bg-white text-black py-2 px-4 rounded-full hover:scale-105 transition-transform text-sm font-bold mb-2 uppercase tracking-wide">
-                    Download DOCX
-                </button>
-            </div>
-
-        </div>
-
-        <div class="w-full lg:w-2/3">
-            <div class="bg-[#121212] rounded-lg border border-[#282828] h-full flex flex-col min-h-[600px] overflow-hidden">
-                <div class="p-4 bg-gradient-to-b from-[#282828] to-[#121212] flex justify-between items-center">
-                    <h2 class="text-sm font-bold text-white tracking-wide">PREVIEW</h2>
-                    <span id="preview-badge" class="text-[10px] font-bold text-black bg-white px-2 py-1 rounded uppercase">Idle</span>
-                </div>
-                
-                <div class="flex-grow bg-[#121212] relative flex items-center justify-center" id="preview-wrapper">
-                    
-                    <div id="preview-placeholder" class="text-center p-10">
-                        <div class="bg-[#282828] rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6 shadow-xl">
-                            <i class="fa-regular fa-file text-[#444] text-5xl"></i>
-                        </div>
-                        <h3 class="text-white font-bold text-xl mb-2">No Document Loaded</h3>
-                        <p class="text-[#b3b3b3] text-sm max-w-xs mx-auto">Upload a PDF or Word document to verify authenticity and apply stamps.</p>
-                    </div>
-
-                    <iframe id="pdf-preview" class="preview-frame hidden w-full h-full border-0" title="PDF Preview"></iframe>
-
-                    <div id="docx-preview-container" class="hidden"></div>
-                    
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <footer class="bg-black py-8 border-t border-[#282828] mt-auto">
-        <div class="max-w-7xl mx-auto px-6 text-center">
-             <p class="text-[#b3b3b3] text-xs">
-                © 2026 DocuTag by Reymarc Jason.
-             </p>
-        </div>
-    </footer>
-
-    <canvas id="composite-canvas"></canvas>
-
-    <script>
-        // --- State ---
-        let currentFile = null;
-        let currentFileArrayBuffer = null;
-        let processedPdfBytes = null;
-        let processedDocxBlob = null; 
-        let isDocx = false;
-        let stampDataUrl = null;
-
-        // --- Elements ---
-        const fileInput = document.getElementById('file-upload');
-        const fileNameDisplay = document.getElementById('file-name');
-        
-        // --- Event Listeners ---
-        fileInput.addEventListener('change', handleFileSelect);
-        document.getElementById('center-align').addEventListener('change', togglePosControls);
-        
-        // --- Functions ---
-
-        function generateUniqueDocNum() {
-            const timestamp = Date.now().toString(36).toUpperCase();
-            const randomPart = Math.floor(Math.random() * 1296).toString(36).toUpperCase().padStart(2, '0');
-            const num = `DOC-${timestamp}-${randomPart}`;
-            document.getElementById('doc-number').value = num;
-        }
-
-        function togglePosControls(e) {
-            const disabled = e.target.checked;
-            const container = document.getElementById('pos-x-container');
-            const input = document.getElementById('pos-x');
-            
-            if (disabled) {
-                container.classList.add('opacity-50');
-                input.disabled = true;
-            } else {
-                container.classList.remove('opacity-50');
-                input.disabled = false;
-            }
-        }
-
-        async function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            currentFile = file;
-            fileNameDisplay.textContent = file.name;
-            fileNameDisplay.classList.remove('text-[#b3b3b3]');
-            fileNameDisplay.classList.add('text-[#1DB954]'); // Green when selected
-            
-            // Set Doc Number to filename (without extension)
-            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-            document.getElementById('doc-number').value = nameWithoutExt;
-
-            // Reset UI
-            document.getElementById('download-section').classList.add('hidden');
-            document.getElementById('pdf-preview').classList.add('hidden');
-            document.getElementById('docx-preview-container').classList.add('hidden');
-            document.getElementById('preview-placeholder').classList.add('hidden');
-
-            const ext = file.name.split('.').pop().toLowerCase();
-
-            if (ext === 'pdf') {
-                isDocx = false;
-                setupPDFMode();
-                const reader = new FileReader();
-                reader.onload = (e) => { 
-                    currentFileArrayBuffer = e.target.result;
-                    const blob = new Blob([currentFileArrayBuffer], { type: 'application/pdf' });
-                    document.getElementById('pdf-preview').src = URL.createObjectURL(blob);
-                    document.getElementById('pdf-preview').classList.remove('hidden');
-                };
-                reader.readAsArrayBuffer(file);
-            } else if (ext === 'docx') {
-                isDocx = true;
-                setupWordMode();
-                renderDocxPreview(file);
-            } else {
-                alert("Only .pdf and .docx are supported.");
-            }
-        }
-
-        function setupPDFMode() {
-            document.getElementById('preview-badge').textContent = "PDF MODE";
-            document.getElementById('position-controls').classList.remove('hidden');
-            document.getElementById('pdf-coords').classList.remove('hidden');
-            document.getElementById('word-note').classList.add('hidden');
-            document.getElementById('process-pdf-btn').classList.remove('hidden');
-            document.getElementById('process-word-btn').classList.add('hidden');
-        }
-
-        function setupWordMode() {
-            document.getElementById('preview-badge').textContent = "WORD MODE";
-            document.getElementById('position-controls').classList.remove('hidden');
-            document.getElementById('pdf-coords').classList.add('hidden'); 
-            document.getElementById('word-note').classList.remove('hidden');
-            document.getElementById('process-pdf-btn').classList.add('hidden');
-            document.getElementById('process-word-btn').classList.remove('hidden');
-        }
-
-        async function renderDocxPreview(file) {
-            const container = document.getElementById('docx-preview-container');
-            container.classList.remove('hidden');
-            container.innerHTML = '';
-            
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                await docx.renderAsync(arrayBuffer, container, null, {
-                    className: "docx-wrapper",
-                    inWrapper: true
-                });
-            } catch (err) {
-                console.error(err);
-                container.innerHTML = '<div class="text-center text-red-500 mt-10">Preview Error. File is valid, but preview failed.</div>';
-            }
-        }
-
-        // --- Stamp Logic (UPDATED with DATE PICKER) ---
-
-        async function generateCompositeStamp() {
-            const canvasWidth = 600;
-            const canvasPadding = 80;
-            
-            const docNum = document.getElementById('doc-number').value;
-            const mode = document.getElementById('qr-mode').value;
-            let qrText = document.getElementById('qr-content').value;
-            
-            // Get Date from Input or Use Current
-            const dateInput = document.getElementById('doc-date').value;
-            let dateObj;
-            if (dateInput) {
-                dateObj = new Date(dateInput);
-            } else {
-                dateObj = new Date();
-            }
-
-            const dateStr = dateObj.toLocaleString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                hour12: true
-            });
-            
-            // --- QR CONTENT LOGIC ---
-            if (!qrText) {
-                if (mode === 'web') {
-                    // Optimized Data URI for web view
-                    const html = `data:text/html,
-                        <meta name="viewport" content="width=device-width, initial-scale=1">
-                        <style>body{font-family:sans-serif;text-align:center;padding:20px;color:#333}</style>
-                        <div style="border:2px solid #22c55e;padding:20px;border-radius:10px;background:#f0fdf4;">
-                            <h2 style="color:#15803d;margin-top:0;">AUTHENTIC & VERIFIED</h2>
-                            <p style="font-size:18px;">This document is authentic and verified.</p>
-                            <hr style="border:0;border-top:1px solid #bbf7d0;margin:15px 0;">
-                            <div style="text-align:left;display:inline-block;">
-                                <b>Ref No:</b> ${docNum}<br>
-                                <b>Released by:</b> Reymarc Jason Tampos<br>
-                                <b>Date:</b> ${dateStr}
-                            </div>
-                        </div>`;
-                    qrText = html;
-                } else {
-                    // Standard Text
-                    qrText = `This document is authentic and verified.\n\nRef: ${docNum}\nReleased by: Reymarc Jason Tampos\nDate: ${dateStr}`;
-                }
-            }
-
-            const canvas = document.getElementById('composite-canvas');
-            const ctx = canvas.getContext('2d');
-
-            const qrUrl = await new Promise((resolve, reject) => {
-                QRCode.toDataURL(qrText, { width: canvasWidth, margin: 1, errorCorrectionLevel: 'M' }, (err, url) => {
-                   if(err) reject(err);
-                   else resolve(url);
-                });
-            });
-
-            const img = new Image();
-            img.src = qrUrl;
-            await new Promise(r => img.onload = r);
-
-            canvas.width = canvasWidth; 
-            canvas.height = canvasWidth + canvasPadding;
-
-            ctx.fillStyle = "rgba(255, 255, 255, 0)"; 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvasWidth, canvasWidth);
-
-            ctx.font = "bold 48px Arial, sans-serif";
-            ctx.fillStyle = "black";
-            ctx.textAlign = "center";
-            ctx.fillText(docNum, canvas.width / 2, canvasWidth + 50);
-
-            return canvas.toDataURL('image/png');
-        }
-
-        // --- PDF Processing ---
-
-        async function processPDF() {
-            if (!currentFileArrayBuffer) return;
-            
-            const btn = document.getElementById('process-pdf-btn');
-            btn.innerHTML = '<div class="loader"></div> Processing...';
-            
-            try {
-                stampDataUrl = await generateCompositeStamp();
-                const pdfDoc = await PDFLib.PDFDocument.load(currentFileArrayBuffer);
-                const stampImage = await pdfDoc.embedPng(stampDataUrl);
-                
-                const pages = pdfDoc.getPages();
-                const page = pages[pages.length - 1]; 
-                const { width: pageWidth } = page.getSize();
-                
-                const scale = 0.16;
-                const stampW = stampImage.width * scale;
-                const stampH = stampImage.height * scale;
-
-                const useCenter = document.getElementById('center-align').checked;
-                const userX = parseInt(document.getElementById('pos-x').value);
-                const userY = parseInt(document.getElementById('pos-y').value);
-                
-                let x = useCenter ? (pageWidth / 2) - (stampW / 2) : userX;
-                
-                page.drawImage(stampImage, {
-                    x: x,
-                    y: userY,
-                    width: stampW,
-                    height: stampH,
-                });
-
-                processedPdfBytes = await pdfDoc.save();
-                
-                const blob = new Blob([processedPdfBytes], { type: 'application/pdf' });
-                document.getElementById('pdf-preview').src = URL.createObjectURL(blob);
-
-                showDownloadSection(true);
-
-            } catch (err) {
-                console.error(err);
-                alert("Error processing PDF: " + err.message);
-            } finally {
-                btn.innerHTML = '<span>STAMP PDF</span>';
-            }
-        }
-
-        // --- Word Processing (SMART FIT) ---
-
-        async function processWordDocument() {
-            const btn = document.getElementById('process-word-btn');
-            btn.innerHTML = '<div class="loader"></div> Processing...';
-            
-            try {
-                stampDataUrl = await generateCompositeStamp();
-                if(!stampDataUrl || stampDataUrl.length < 100) throw new Error("QR Generation failed");
-
-                const imgData = stampDataUrl.split(',')[1]; 
-
-                // 1. Load DOCX
-                const zip = await JSZip.loadAsync(currentFile);
-
-                // 2. Add Image File
-                const imgFileName = "media/docutag_stamp.png";
-                zip.file("word/" + imgFileName, imgData, {base64: true});
-
-                // 3. Update Content Types
-                let contentTypes = await zip.file("[Content_Types].xml").async("string");
-                if (!contentTypes.includes('Extension="png"')) {
-                    const typesTag = '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">';
-                    const newType = '<Default Extension="png" ContentType="image/png"/>';
-                    contentTypes = contentTypes.replace(typesTag, typesTag + newType);
-                    zip.file("[Content_Types].xml", contentTypes);
-                }
-
-                // 4. Update Relationship File
-                const relsFile = "word/_rels/document.xml.rels";
-                let relsXml = await zip.file(relsFile).async("string");
-                const rId = "rIdStamp" + Math.floor(Math.random() * 9999);
-                
-                const newRel = `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="${imgFileName}"/>`;
-                const relsEnd = "</Relationships>";
-                relsXml = relsXml.replace(relsEnd, newRel + relsEnd);
-                zip.file(relsFile, relsXml);
-
-                // 5. Inject Image using wp:anchor (Floating "Smart" Anchor)
-                const docFile = "word/document.xml";
-                let docXml = await zip.file(docFile).async("string");
-                
-                const useCenter = document.getElementById('center-align').checked;
-                const alignH = useCenter ? "center" : "left";
-
-                const widthEmu = 800000;
-                const heightEmu = 920000;
-                const docPrId = Math.floor(Math.random() * 100000);
-
-                const anchorXml = `
-                    <w:r>
-                        <w:drawing>
-                            <wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="0" behindDoc="0" locked="0" layoutInCell="0" allowOverlap="1" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
-                                <wp:simplePos x="0" y="0"/>
-                                <wp:positionH relativeFrom="page">
-                                    <wp:align>${alignH}</wp:align>
-                                </wp:positionH>
-                                <wp:positionV relativeFrom="margin">
-                                    <wp:align>bottom</wp:align>
-                                </wp:positionV>
-                                <wp:extent cx="${widthEmu}" cy="${heightEmu}"/>
-                                <wp:effectExtent l="0" t="0" r="0" b="0"/>
-                                <wp:wrapNone/>
-                                <wp:docPr id="${docPrId}" name="DocuTag Stamp"/>
-                                <wp:cNvGraphicFramePr>
-                                    <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/>
-                                </wp:cNvGraphicFramePr>
-                                <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
-                                    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
-                                        <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
-                                            <pic:nvPicPr>
-                                                <pic:cNvPr id="${docPrId}" name="DocuTag Stamp"/>
-                                                <pic:cNvPicPr/>
-                                            </pic:nvPicPr>
-                                            <pic:blipFill>
-                                                <a:blip r:embed="${rId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>
-                                                <a:stretch>
-                                                    <a:fillRect/>
-                                                </a:stretch>
-                                            </pic:blipFill>
-                                            <pic:spPr>
-                                                <a:xfrm>
-                                                    <a:off x="0" y="0"/>
-                                                    <a:ext cx="${widthEmu}" cy="${heightEmu}"/>
-                                                </a:xfrm>
-                                                <a:prstGeom prst="rect">
-                                                    <a:avLst/>
-                                                </a:prstGeom>
-                                            </pic:spPr>
-                                        </pic:pic>
-                                    </a:graphicData>
-                                </a:graphic>
-                            </wp:anchor>
-                        </w:drawing>
-                    </w:r>`;
-
-                // SMART INJECTION: INSIDE the last paragraph
-                const lastPIndex = docXml.lastIndexOf("</w:p>");
-                
-                if (lastPIndex !== -1) {
-                    docXml = docXml.substring(0, lastPIndex) + anchorXml + docXml.substring(lastPIndex);
-                } else {
-                    const bodyEnd = "</w:body>";
-                    const fallbackP = `<w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>${anchorXml}</w:p>`;
-                    docXml = docXml.replace(bodyEnd, fallbackP + bodyEnd);
-                }
-
-                zip.file(docFile, docXml);
-
-                processedDocxBlob = await zip.generateAsync({type:"blob"});
-                
-                // Render Preview
-                const buffer = await processedDocxBlob.arrayBuffer();
-                await docx.renderAsync(buffer, document.getElementById('docx-preview-container'), null, { className: "docx-wrapper", inWrapper: true });
-
-                showDownloadSection(false);
-
-            } catch (err) {
-                console.error(err);
-                alert("Error processing Word Document: " + err.message);
-            } finally {
-                btn.innerHTML = '<i class="fa-solid fa-file-word"></i><span>STAMP WORD</span>';
-            }
-        }
-
-        // --- Downloads ---
-
-        function showDownloadSection(isPdf) {
-            const section = document.getElementById('download-section');
-            const dlPdf = document.getElementById('dl-pdf-btn');
-            const dlWord = document.getElementById('dl-word-btn');
-            const msg = document.getElementById('success-msg');
-
-            section.classList.remove('hidden');
-            
-            if (isPdf) {
-                dlPdf.classList.remove('hidden');
-                dlWord.classList.add('hidden');
-                msg.textContent = "PDF stamped successfully.";
-            } else {
-                dlPdf.classList.add('hidden');
-                dlWord.classList.remove('hidden');
-                msg.textContent = "Word document stamped successfully.";
-            }
-        }
-
-        function getSafeDocNum() {
-            const num = document.getElementById('doc-number').value || 'DOC';
-            return num.replace(/[^a-z0-9\-_ ]/gi, '_');
-        }
-
-        function downloadPDF() {
-            const blob = new Blob([processedPdfBytes], { type: 'application/pdf' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `${getSafeDocNum()}_Stamped.pdf`;
-            link.click();
-        }
-
-        function downloadWord() {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(processedDocxBlob);
-            link.download = `${getSafeDocNum()}_Stamped.docx`;
-            link.click();
-        }
-
-    </script>
+<header class="p-6 border-b border-neutral-800">
+  <h1 class="text-xl font-bold">DocuTag</h1>
+</header>
+
+<main class="flex-grow max-w-5xl mx-auto p-6 grid md:grid-cols-2 gap-6">
+
+<div class="space-y-6">
+
+  <div class="app-card p-6">
+    <input type="file" id="file-upload" accept=".docx"
+           class="app-input w-full p-3 rounded">
+    <p id="file-name" class="text-xs text-neutral-400 mt-2">No file selected</p>
+  </div>
+
+  <div class="app-card p-6 space-y-4">
+    <input id="doc-number" class="app-input w-full p-3 rounded font-mono"
+           placeholder="Reference Number">
+    <input type="datetime-local" id="doc-date"
+           class="app-input w-full p-3 rounded">
+
+    <select id="released-by" class="app-input w-full p-3 rounded">
+      <option>Norlyn M. Antaran</option>
+      <option selected>Reymarc Jason T. Tampos</option>
+      <option>Recille R. Ezar</option>
+      <option>Regine T. Regalado</option>
+    </select>
+
+    <button onclick="processWordDocument()" class="btn w-full py-3">
+      STAMP WORD
+    </button>
+
+    <button id="download-btn" onclick="downloadWord()"
+      class="hidden w-full py-3 border border-green-500 text-green-400 font-bold rounded-full">
+      DOWNLOAD DOCX
+    </button>
+  </div>
+</div>
+
+<div class="app-card p-4 overflow-auto">
+  <div id="preview" class="bg-white p-4 rounded"></div>
+</div>
+
+</main>
+
+<canvas id="composite-canvas"></canvas>
+
+<script>
+let sourceFile = null;
+let processedDocxBlob = null;
+
+const fileInput = document.getElementById("file-upload");
+const fileNameEl = document.getElementById("file-name");
+const docNumberEl = document.getElementById("doc-number");
+const docDateEl = document.getElementById("doc-date");
+const releasedByEl = document.getElementById("released-by");
+const previewEl = document.getElementById("preview");
+const downloadBtn = document.getElementById("download-btn");
+
+fileInput.addEventListener("change", e => {
+  sourceFile = e.target.files[0];
+  if (!sourceFile) return;
+  fileNameEl.textContent = sourceFile.name;
+  docNumberEl.value = sourceFile.name.replace(/\.[^/.]+$/, "");
+});
+
+async function generateQRBase64() {
+
+  const ref = docNumberEl.value.trim();
+  const by = releasedByEl.value;
+  const dateObj = docDateEl.value ? new Date(docDateEl.value) : new Date();
+
+  const dateStr = dateObj.toLocaleString("en-US", {
+    month:"short",day:"numeric",year:"numeric",
+    hour:"numeric",minute:"numeric",hour12:true
+  });
+
+  const qrURL =
+    `https://rymrceight.github.io/verifier/` +
+    `?ref=${encodeURIComponent(ref)}` +
+    `&by=${encodeURIComponent(by)}` +
+    `&date=${encodeURIComponent(dateStr)}`;
+
+  const dataURL = await QRCode.toDataURL(qrURL,{ width:500 });
+  return dataURL.split(",")[1];
+}
+
+async function processWordDocument() {
+
+  if (!sourceFile) return alert("Upload a DOCX file first.");
+
+  const qrBase64 = await generateQRBase64();
+  const zip = await JSZip.loadAsync(sourceFile);
+
+  // 1. Add image
+  zip.file("word/media/docutag_qr.png", qrBase64, { base64:true });
+
+  // 2. Content types
+  let ct = await zip.file("[Content_Types].xml").async("string");
+  if (!ct.includes("image/png")) {
+    ct = ct.replace("</Types>",
+      '<Default Extension="png" ContentType="image/png"/></Types>');
+    zip.file("[Content_Types].xml", ct);
+  }
+
+  // 3. Relationships
+  const relsPath = "word/_rels/document.xml.rels";
+  let rels = await zip.file(relsPath).async("string");
+  const rId = "rIdDocuTag" + Math.floor(Math.random()*100000);
+
+  rels = rels.replace("</Relationships>",
+    `<Relationship Id="${rId}"
+     Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+     Target="media/docutag_qr.png"/></Relationships>`);
+
+  zip.file(relsPath, rels);
+
+  // 4. Word-native anchor (THIS is the critical fix)
+  const docPrId = Math.floor(Math.random()*100000);
+
+  const anchor = `
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:r>
+<w:drawing>
+<wp:anchor
+ xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+ xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+ xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+ simplePos="0" relativeHeight="0" behindDoc="0"
+ locked="0" layoutInCell="0" allowOverlap="1">
+<wp:simplePos x="0" y="0"/>
+<wp:positionH relativeFrom="page"><wp:align>center</wp:align></wp:positionH>
+<wp:positionV relativeFrom="margin"><wp:align>bottom</wp:align></wp:positionV>
+<wp:extent cx="900000" cy="900000"/>
+<wp:effectExtent l="0" t="0" r="0" b="0"/>
+<wp:wrapNone/>
+<wp:docPr id="${docPrId}" name="DocuTag QR"/>
+<wp:cNvGraphicFramePr>
+<a:graphicFrameLocks noChangeAspect="1"/>
+</wp:cNvGraphicFramePr>
+<a:graphic>
+<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+<pic:pic>
+<pic:nvPicPr>
+<pic:cNvPr id="${docPrId}" name="DocuTag QR"/>
+<pic:cNvPicPr/>
+</pic:nvPicPr>
+<pic:blipFill>
+<a:blip r:embed="${rId}"/>
+<a:stretch><a:fillRect/></a:stretch>
+</pic:blipFill>
+<pic:spPr>
+<a:xfrm>
+<a:off x="0" y="0"/>
+<a:ext cx="900000" cy="900000"/>
+</a:xfrm>
+<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+</pic:spPr>
+</pic:pic>
+</a:graphicData>
+</a:graphic>
+</wp:anchor>
+</w:drawing>
+</w:r>
+</w:p>`;
+
+  let docXml = await zip.file("word/document.xml").async("string");
+  docXml = docXml.replace("</w:body>", anchor + "</w:body>");
+  zip.file("word/document.xml", docXml);
+
+  processedDocxBlob = await zip.generateAsync({ type:"blob" });
+
+  const buf = await processedDocxBlob.arrayBuffer();
+  previewEl.innerHTML = "";
+  await docx.renderAsync(buf, previewEl);
+
+  downloadBtn.classList.remove("hidden");
+}
+
+function downloadWord() {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(processedDocxBlob);
+  a.download = docNumberEl.value + "_Stamped.docx";
+  a.click();
+}
+</script>
+
 </body>
 </html>
-
-
