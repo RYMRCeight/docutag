@@ -140,11 +140,10 @@ async function processWordDocument() {
   // 4. Word-native anchor (THIS is the critical fix)
   const docPrId = Math.floor(Math.random()*100000);
 
-  const anchor = `
+ const anchor = `
 <w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 <w:pPr>
   <w:spacing w:before="0" w:after="0" w:line="0"/>
-  <w:jc w:val="left"/>
 </w:pPr>
 <w:r>
 <w:drawing>
@@ -162,14 +161,12 @@ async function processWordDocument() {
 
 <wp:simplePos x="0" y="0"/>
 
-<!-- LEFT MOST -->
 <wp:positionH relativeFrom="page">
-  <wp:posOffset>0</wp:posOffset>
+  <wp:align>right</wp:align>
 </wp:positionH>
 
-<!-- LOWEST -->
 <wp:positionV relativeFrom="page">
-  <wp:posOffset>0</wp:posOffset>
+  <wp:align>bottom</wp:align>
 </wp:positionV>
 
 <wp:extent cx="700000" cy="700000"/>
@@ -233,4 +230,5 @@ function downloadWord() {
 
 </body>
 </html>
+
 
