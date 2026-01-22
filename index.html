@@ -77,15 +77,13 @@ const releasedByEl = document.getElementById("released-by");
 const previewEl = document.getElementById("preview");
 const downloadBtn = document.getElementById("download-btn");
 
-/* 🇵🇭 PHILIPPINE STANDARD TIME AUTO-FILL */
-function setPhilippineDateTime() {
+/* PHILIPPINE STANDARD TIME */
+(function setPST(){
   const now = new Date();
-  const pst = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+  const pst = new Date(now.getTime() + 8*60*60*1000);
   docDateEl.value = pst.toISOString().slice(0,16);
-}
-setPhilippineDateTime();
+})();
 
-/* FILE LOAD */
 fileInput.addEventListener("change", e => {
   sourceFile = e.target.files[0];
   if (!sourceFile) return;
@@ -93,7 +91,6 @@ fileInput.addEventListener("change", e => {
   docNumberEl.value = sourceFile.name.replace(/\.[^/.]+$/, "");
 });
 
-/* QR GENERATION */
 async function generateQRBase64() {
   const ref = docNumberEl.value.trim();
   const by = releasedByEl.value;
@@ -102,7 +99,7 @@ async function generateQRBase64() {
   const dateStr = dateObj.toLocaleString("en-US", {
     month:"short", day:"numeric", year:"numeric",
     hour:"numeric", minute:"numeric", hour12:true,
-    timeZone: "Asia/Manila"
+    timeZone:"Asia/Manila"
   });
 
   const qrURL =
@@ -115,7 +112,6 @@ async function generateQRBase64() {
   return dataURL.split(",")[1];
 }
 
-/* WORD PROCESSING */
 async function processWordDocument() {
   if (!sourceFile) return alert("Upload a DOCX file first.");
 
@@ -139,39 +135,51 @@ async function processWordDocument() {
     `<Relationship Id="${rId}"
      Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
      Target="media/docutag_qr.png"/></Relationships>`);
-
   zip.file(relsPath, rels);
 
   const docPrId = Math.floor(Math.random()*100000);
 
   const anchor = `
 <w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-<w:pPr><w:spacing w:before="0" w:after="0" w:line="0"/></w:pPr>
+<w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr>
 <w:r><w:drawing>
-<wp:anchor xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+<wp:anchor
+ xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
  xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
  xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
  simplePos="0" relativeHeight="0" behindDoc="0"
  locked="0" layoutInCell="1" allowOverlap="1">
 
+<wp:simplePos x="0" y="0"/>
 <wp:positionH relativeFrom="page"><wp:align>right</wp:align></wp:positionH>
 <wp:positionV relativeFrom="page"><wp:align>bottom</wp:align></wp:positionV>
-
 <wp:extent cx="700000" cy="700000"/>
+<wp:effectExtent l="0" t="0" r="0" b="0"/>
 <wp:wrapNone/>
 
 <wp:docPr id="${docPrId}" name="DocuTag QR"/>
+<wp:cNvGraphicFramePr>
+<a:graphicFrameLocks noChangeAspect="1"/>
+</wp:cNvGraphicFramePr>
 
 <a:graphic>
 <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
 <pic:pic>
+<pic:nvPicPr>
+<pic:cNvPr id="${docPrId}" name="DocuTag QR"/>
+<pic:cNvPicPr/>
+</pic:nvPicPr>
 <pic:blipFill>
 <a:blip r:embed="${rId}"/>
 <a:stretch><a:fillRect/></a:stretch>
 </pic:blipFill>
 <pic:spPr>
-<a:xfrm><a:ext cx="700000" cy="700000"/></a:xfrm>
+<a:xfrm>
+<a:off x="0" y="0"/>
+<a:ext cx="700000" cy="700000"/>
+</a:xfrm>
+<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
 </pic:spPr>
 </pic:pic>
 </a:graphicData>
@@ -185,7 +193,6 @@ async function processWordDocument() {
   zip.file("word/document.xml", docXml);
 
   processedDocxBlob = await zip.generateAsync({ type:"blob" });
-
   previewEl.innerHTML = "";
   await docx.renderAsync(await processedDocxBlob.arrayBuffer(), previewEl);
   downloadBtn.classList.remove("hidden");
