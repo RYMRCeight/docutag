@@ -15,7 +15,6 @@ body{background:#121212;color:white;font-family:Inter,system-ui}
 .app-card{background:#181818;border-radius:12px}
 .app-input{background:#2a2a2a;color:white}
 .btn{background:#22c55e;color:black;font-weight:700;border-radius:999px}
-#composite-canvas{position:absolute;left:-9999px}
 </style>
 </head>
 
@@ -38,6 +37,7 @@ body{background:#121212;color:white;font-family:Inter,system-ui}
   <div class="app-card p-6 space-y-4">
     <input id="doc-number" class="app-input w-full p-3 rounded font-mono"
            placeholder="Reference Number">
+
     <input type="datetime-local" id="doc-date"
            class="app-input w-full p-3 rounded">
 
@@ -65,8 +65,6 @@ body{background:#121212;color:white;font-family:Inter,system-ui}
 
 </main>
 
-<canvas id="composite-canvas"></canvas>
-
 <script>
 let sourceFile = null;
 let processedDocxBlob = null;
@@ -79,6 +77,15 @@ const releasedByEl = document.getElementById("released-by");
 const previewEl = document.getElementById("preview");
 const downloadBtn = document.getElementById("download-btn");
 
+/* 🇵🇭 PHILIPPINE STANDARD TIME AUTO-FILL */
+function setPhilippineDateTime() {
+  const now = new Date();
+  const pst = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+  docDateEl.value = pst.toISOString().slice(0,16);
+}
+setPhilippineDateTime();
+
+/* FILE LOAD */
 fileInput.addEventListener("change", e => {
   sourceFile = e.target.files[0];
   if (!sourceFile) return;
@@ -86,15 +93,16 @@ fileInput.addEventListener("change", e => {
   docNumberEl.value = sourceFile.name.replace(/\.[^/.]+$/, "");
 });
 
+/* QR GENERATION */
 async function generateQRBase64() {
-
   const ref = docNumberEl.value.trim();
   const by = releasedByEl.value;
-  const dateObj = docDateEl.value ? new Date(docDateEl.value) : new Date();
+  const dateObj = new Date(docDateEl.value);
 
   const dateStr = dateObj.toLocaleString("en-US", {
-    month:"short",day:"numeric",year:"numeric",
-    hour:"numeric",minute:"numeric",hour12:true
+    month:"short", day:"numeric", year:"numeric",
+    hour:"numeric", minute:"numeric", hour12:true,
+    timeZone: "Asia/Manila"
   });
 
   const qrURL =
@@ -107,17 +115,15 @@ async function generateQRBase64() {
   return dataURL.split(",")[1];
 }
 
+/* WORD PROCESSING */
 async function processWordDocument() {
-
   if (!sourceFile) return alert("Upload a DOCX file first.");
 
   const qrBase64 = await generateQRBase64();
   const zip = await JSZip.loadAsync(sourceFile);
 
-  // 1. Add image
   zip.file("word/media/docutag_qr.png", qrBase64, { base64:true });
 
-  // 2. Content types
   let ct = await zip.file("[Content_Types].xml").async("string");
   if (!ct.includes("image/png")) {
     ct = ct.replace("</Types>",
@@ -125,7 +131,6 @@ async function processWordDocument() {
     zip.file("[Content_Types].xml", ct);
   }
 
-  // 3. Relationships
   const relsPath = "word/_rels/document.xml.rels";
   let rels = await zip.file(relsPath).async("string");
   const rId = "rIdDocuTag" + Math.floor(Math.random()*100000);
@@ -137,75 +142,43 @@ async function processWordDocument() {
 
   zip.file(relsPath, rels);
 
-  // 4. Word-native anchor (THIS is the critical fix)
   const docPrId = Math.floor(Math.random()*100000);
 
- const anchor = `
+  const anchor = `
 <w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-<w:pPr>
-  <w:spacing w:before="0" w:after="0" w:line="0"/>
-</w:pPr>
-<w:r>
-<w:drawing>
-<wp:anchor
- xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+<w:pPr><w:spacing w:before="0" w:after="0" w:line="0"/></w:pPr>
+<w:r><w:drawing>
+<wp:anchor xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
  xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
  xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
- simplePos="0"
- relativeHeight="0"
- behindDoc="0"
- locked="0"
- layoutInCell="1"
- allowOverlap="1">
+ simplePos="0" relativeHeight="0" behindDoc="0"
+ locked="0" layoutInCell="1" allowOverlap="1">
 
-<wp:simplePos x="0" y="0"/>
-
-<wp:positionH relativeFrom="page">
-  <wp:align>right</wp:align>
-</wp:positionH>
-
-<wp:positionV relativeFrom="page">
-  <wp:align>bottom</wp:align>
-</wp:positionV>
+<wp:positionH relativeFrom="page"><wp:align>right</wp:align></wp:positionH>
+<wp:positionV relativeFrom="page"><wp:align>bottom</wp:align></wp:positionV>
 
 <wp:extent cx="700000" cy="700000"/>
-<wp:effectExtent l="0" t="0" r="0" b="0"/>
 <wp:wrapNone/>
 
 <wp:docPr id="${docPrId}" name="DocuTag QR"/>
-<wp:cNvGraphicFramePr>
-  <a:graphicFrameLocks noChangeAspect="1"/>
-</wp:cNvGraphicFramePr>
 
 <a:graphic>
 <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
 <pic:pic>
-<pic:nvPicPr>
-<pic:cNvPr id="${docPrId}" name="DocuTag QR"/>
-<pic:cNvPicPr/>
-</pic:nvPicPr>
-
 <pic:blipFill>
 <a:blip r:embed="${rId}"/>
 <a:stretch><a:fillRect/></a:stretch>
 </pic:blipFill>
-
 <pic:spPr>
-<a:xfrm>
-<a:off x="0" y="0"/>
-<a:ext cx="700000" cy="700000"/>
-</a:xfrm>
-<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+<a:xfrm><a:ext cx="700000" cy="700000"/></a:xfrm>
 </pic:spPr>
 </pic:pic>
 </a:graphicData>
 </a:graphic>
 
 </wp:anchor>
-</w:drawing>
-</w:r>
-</w:p>`;
+</w:drawing></w:r></w:p>`;
 
   let docXml = await zip.file("word/document.xml").async("string");
   docXml = docXml.replace("</w:body>", anchor + "</w:body>");
@@ -213,10 +186,8 @@ async function processWordDocument() {
 
   processedDocxBlob = await zip.generateAsync({ type:"blob" });
 
-  const buf = await processedDocxBlob.arrayBuffer();
   previewEl.innerHTML = "";
-  await docx.renderAsync(buf, previewEl);
-
+  await docx.renderAsync(await processedDocxBlob.arrayBuffer(), previewEl);
   downloadBtn.classList.remove("hidden");
 }
 
@@ -230,5 +201,3 @@ function downloadWord() {
 
 </body>
 </html>
-
-
