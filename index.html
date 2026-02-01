@@ -196,6 +196,9 @@ async function processWordDocument() {
   previewEl.innerHTML = "";
   await docx.renderAsync(await processedDocxBlob.arrayBuffer(), previewEl);
   downloadBtn.classList.remove("hidden");
+
+  await logToGoogleSheet();
+
 }
 
 function downloadWord() {
@@ -204,7 +207,27 @@ function downloadWord() {
   a.download = docNumberEl.value + "_Stamped.docx";
   a.click();
 }
+
+  async function logToGoogleSheet() {
+  const payload = {
+    refNumber: docNumberEl.value.trim(),
+    releasedBy: releasedByEl.value,
+    dateIssued: docDateEl.value,
+    fileName: sourceFile.name
+  };
+
+  await fetch("https://script.google.com/macros/s/AKfycbwsWWnhq8j-didVcklM3AEChXelE4u1cYBjP9NlZHkBTqK2ArZoGK9d7inhKdbhnJFJ/exec", {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+}
+
 </script>
 
 </body>
 </html>
+
