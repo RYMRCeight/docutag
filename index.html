@@ -208,26 +208,25 @@ function downloadWord() {
   a.click();
 }
 
-function logToGoogleSheet() {
+  async function logToGoogleSheet() {
+  const payload = {
+    refNumber: docNumberEl.value.trim(),
+    releasedBy: releasedByEl.value,
+    dateIssued: docDateEl.value,
+    fileName: sourceFile.name
+  };
 
-  const formData = new FormData();
-  formData.append("refNumber", docNumberEl.value.trim());
-  formData.append("releasedBy", releasedByEl.value);
-  formData.append("dateIssued", docDateEl.value);
-  formData.append("fileName", sourceFile.name);
-
-  navigator.sendBeacon(
-    "https://script.google.com/macros/s/AKfycbwsWWnhq8j-didVcklM3AEChXelE4u1cYBjP9NlZHkBTqK2ArZoGK9d7inhKdbhnJFJ/exec",
-    formData
-  );
+  await fetch("https://script.google.com/macros/s/AKfycbwsWWnhq8j-didVcklM3AEChXelE4u1cYBjP9NlZHkBTqK2ArZoGK9d7inhKdbhnJFJ/exec", {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
 }
-
 
 </script>
 
 </body>
 </html>
-
-
-
-
