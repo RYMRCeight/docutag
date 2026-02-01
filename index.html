@@ -208,29 +208,26 @@ function downloadWord() {
   a.click();
 }
 
-async function logToGoogleSheet() {
+function logToGoogleSheet() {
 
-  const formData = new URLSearchParams();
+  const formData = new FormData();
   formData.append("refNumber", docNumberEl.value.trim());
   formData.append("releasedBy", releasedByEl.value);
   formData.append("dateIssued", docDateEl.value);
   formData.append("fileName", sourceFile.name);
 
-  const response = await fetch(
+  navigator.sendBeacon(
     "https://script.google.com/macros/s/AKfycbwsWWnhq8j-didVcklM3AEChXelE4u1cYBjP9NlZHkBTqK2ArZoGK9d7inhKdbhnJFJ/exec",
-    {
-      method: "POST",
-      body: formData
-    }
+    formData
   );
-
-  console.log("Logging request sent");
 }
+
 
 </script>
 
 </body>
 </html>
+
 
 
 
