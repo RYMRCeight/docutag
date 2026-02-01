@@ -101,13 +101,15 @@ async function generateQRBase64() {
     hour:"numeric", minute:"numeric", hour12:true,
     timeZone:"Asia/Manila"
   });
-  
-   const qrURL =
-  `https://rymrceight.github.io/verifier/?ref=${encodeURIComponent(ref)}`;
 
-const dataURL = await QRCode.toDataURL(qrURL, { width: 500 });
-return dataURL.split(",")[1];
+  const qrURL =
+    `https://rymrceight.github.io/verifier/` +
+    `?ref=${encodeURIComponent(ref)}` +
+    `&by=${encodeURIComponent(by)}` +
+    `&date=${encodeURIComponent(dateStr)}`;
 
+  const dataURL = await QRCode.toDataURL(qrURL,{ width:500 });
+  return dataURL.split(",")[1];
 }
 
 async function processWordDocument() {
@@ -228,5 +230,3 @@ function downloadWord() {
 
 </body>
 </html>
-
-
