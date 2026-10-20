@@ -41,12 +41,18 @@ body{background:#121212;color:white;font-family:Inter,system-ui}
     <input type="datetime-local" id="doc-date"
            class="app-input w-full p-3 rounded">
 
+    <label for="released-by" class="block text-sm text-neutral-300">Released By</label>
     <select id="released-by" class="app-input w-full p-3 rounded">
-      <option>Norlyn M. Antaran</option>
-      <option selected>Reymarc Jason T. Tampos</option>
-      <option>Recille R. Ezar</option>
-      <option>Regine T. Regalado</option>
+      <option value="Norlyn M. Antaran">Norlyn M. Antaran</option>
+      <option value="Reymarc Jason T. Tampos" selected>Reymarc Jason T. Tampos</option>
+      <option value="Recille R. Ezar">Recille R. Ezar</option>
+      <option value="Regine T. Regalado">Regine T. Regalado</option>
     </select>
+    <div class="rounded-lg border border-neutral-700 bg-neutral-900 p-3">
+      <p class="text-xs uppercase tracking-wide text-neutral-400">Position / Designation</p>
+      <p id="released-position" class="font-semibold mt-1">Information Officer I</p>
+      <p class="text-xs text-neutral-500 mt-2">Edit the position mapping in the HTML if a designation is not yet listed.</p>
+    </div>
 
     <button onclick="processWordDocument()" class="btn w-full py-3">
       STAMP WORD
@@ -74,8 +80,27 @@ const fileNameEl = document.getElementById("file-name");
 const docNumberEl = document.getElementById("doc-number");
 const docDateEl = document.getElementById("doc-date");
 const releasedByEl = document.getElementById("released-by");
+const releasedPositionEl = document.getElementById("released-position");
 const previewEl = document.getElementById("preview");
 const downloadBtn = document.getElementById("download-btn");
+
+/* Releaser positions. Replace the bracketed placeholders when confirmed. */
+const releaserPositions = {
+  "Reymarc Jason T. Tampos": "Information Officer I",
+  "Norlyn M. Antaran": "[Position not provided]",
+  "Recille R. Ezar": "[Position not provided]",
+  "Regine T. Regalado": "[Position not provided]"
+};
+
+function getReleasedPosition() {
+  return releaserPositions[releasedByEl.value] || "Position not specified";
+}
+
+function updateReleasedPosition() {
+  releasedPositionEl.textContent = getReleasedPosition();
+}
+releasedByEl.addEventListener("change", updateReleasedPosition);
+updateReleasedPosition();
 
 /* PHILIPPINE STANDARD TIME */
 (function setPST(){
@@ -94,6 +119,7 @@ fileInput.addEventListener("change", e => {
 async function generateQRBase64() {
   const ref = docNumberEl.value.trim();
   const by = releasedByEl.value;
+  const position = getReleasedPosition();
   const dateObj = new Date(docDateEl.value);
 
   const dateStr = dateObj.toLocaleString("en-US", {
@@ -106,10 +132,38 @@ async function generateQRBase64() {
     `https://rymrceight.github.io/verifier/` +
     `?ref=${encodeURIComponent(ref)}` +
     `&by=${encodeURIComponent(by)}` +
+    `&position=${encodeURIComponent(position)}` +
     `&date=${encodeURIComponent(dateStr)}`;
 
-  const dataURL = await QRCode.toDataURL(qrURL,{ width:500 });
-  return dataURL.split(",")[1];
+  /* Composite stamp: QR code with releaser name and position beneath it. */
+  const qrDataURL = await QRCode.toDataURL(qrURL, {
+    width: 500, margin: 2, errorCorrectionLevel: "H"
+  });
+  const qrImage = new Image();
+  qrImage.src = qrDataURL;
+  await new Promise((resolve, reject) => {
+    qrImage.onload = resolve;
+    qrImage.onerror = reject;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 600;
+  canvas.height = 680;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(qrImage, 50, 10, 500, 500);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#111111";
+  ctx.font = "bold 25px Arial, sans-serif";
+  ctx.fillText(by, 300, 550, 570);
+  ctx.fillStyle = "#444444";
+  ctx.font = "22px Arial, sans-serif";
+  ctx.fillText(position, 300, 585, 570);
+  ctx.fillStyle = "#666666";
+  ctx.font = "16px Arial, sans-serif";
+  ctx.fillText("DOCUMENT RELEASE VERIFICATION", 300, 630, 570);
+  return canvas.toDataURL("image/png").split(",")[1];
 }
 
 async function processWordDocument() {
@@ -154,7 +208,7 @@ async function processWordDocument() {
 <wp:simplePos x="0" y="0"/>
 <wp:positionH relativeFrom="page"><wp:align>right</wp:align></wp:positionH>
 <wp:positionV relativeFrom="page"><wp:align>bottom</wp:align></wp:positionV>
-<wp:extent cx="700000" cy="700000"/>
+<wp:extent cx="1000000" cy="1133333"/>
 <wp:effectExtent l="0" t="0" r="0" b="0"/>
 <wp:wrapNone/>
 
@@ -177,7 +231,7 @@ async function processWordDocument() {
 <pic:spPr>
 <a:xfrm>
 <a:off x="0" y="0"/>
-<a:ext cx="700000" cy="700000"/>
+<a:ext cx="1000000" cy="1133333"/>
 </a:xfrm>
 <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
 </pic:spPr>
@@ -212,6 +266,7 @@ function downloadWord() {
   const payload = {
     refNumber: docNumberEl.value.trim(),
     releasedBy: releasedByEl.value,
+    releasedPosition: getReleasedPosition(),
     dateIssued: docDateEl.value,
     fileName: sourceFile.name
   };
