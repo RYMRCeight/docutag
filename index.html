@@ -135,35 +135,11 @@ async function generateQRBase64() {
     `&position=${encodeURIComponent(position)}` +
     `&date=${encodeURIComponent(dateStr)}`;
 
-  /* Composite stamp: QR code with releaser name and position beneath it. */
+  /* QR image only — releaser name and position remain on the verification webpage. */
   const qrDataURL = await QRCode.toDataURL(qrURL, {
     width: 500, margin: 2, errorCorrectionLevel: "H"
   });
-  const qrImage = new Image();
-  qrImage.src = qrDataURL;
-  await new Promise((resolve, reject) => {
-    qrImage.onload = resolve;
-    qrImage.onerror = reject;
-  });
-
-  const canvas = document.createElement("canvas");
-  canvas.width = 600;
-  canvas.height = 680;
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(qrImage, 50, 10, 500, 500);
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#111111";
-  ctx.font = "bold 25px Arial, sans-serif";
-  ctx.fillText(by, 300, 550, 570);
-  ctx.fillStyle = "#444444";
-  ctx.font = "22px Arial, sans-serif";
-  ctx.fillText(position, 300, 585, 570);
-  ctx.fillStyle = "#666666";
-  ctx.font = "16px Arial, sans-serif";
-  ctx.fillText("DOCUMENT RELEASE VERIFICATION", 300, 630, 570);
-  return canvas.toDataURL("image/png").split(",")[1];
+  return qrDataURL.split(",")[1];
 }
 
 async function processWordDocument() {
@@ -208,7 +184,7 @@ async function processWordDocument() {
 <wp:simplePos x="0" y="0"/>
 <wp:positionH relativeFrom="page"><wp:align>right</wp:align></wp:positionH>
 <wp:positionV relativeFrom="page"><wp:align>bottom</wp:align></wp:positionV>
-<wp:extent cx="1000000" cy="1133333"/>
+<wp:extent cx="700000" cy="700000"/>
 <wp:effectExtent l="0" t="0" r="0" b="0"/>
 <wp:wrapNone/>
 
@@ -231,7 +207,7 @@ async function processWordDocument() {
 <pic:spPr>
 <a:xfrm>
 <a:off x="0" y="0"/>
-<a:ext cx="1000000" cy="1133333"/>
+<a:ext cx="700000" cy="700000"/>
 </a:xfrm>
 <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
 </pic:spPr>
